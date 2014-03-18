@@ -6,4 +6,16 @@ bupper is a profile manager for [bup](https://github.com/bup/bup), the backup ut
 
 ## Installation
 
+`gem install bupper`
+
+## Configuration
+
+The configuration is done in `/etc/bupper.yml` or in the config file you specify with `--config <filename>`.
+
+``` yaml
+---
+global:
+  log_dir: '/var/log/bupper'
+```
+
 ## Usage
