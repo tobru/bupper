@@ -124,6 +124,7 @@ def bup_index(name, profile)
 end
 
 def bup_save(name, profile)
+  @log.info('running bup save for profile ' + name)
   if profile.has_key?('remote') then remote = profile['remote'] else remote = false end
   if remote
     command = "bup save -r #{profile['destination']} -n #{name} -f /root/.bup/index_#{name} " + profile['source'].join(' ')
@@ -137,6 +138,7 @@ def bup_save(name, profile)
     return true
   else
     @log.error('saving failed for profile ' + name)
+    @log.debug('return code of bup save: ' + s.exitstatus.to_s)
     return false
   end
 end
