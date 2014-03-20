@@ -36,7 +36,12 @@ opt_parser.parse!
 action = ARGV[0]
 
 # load and parse configuration
-configuration = YAML.load_file(options[:config])
+if File.exist?(options[:config])
+  configuration = YAML.load_file(options[:config])
+else
+  puts "Configuration file #{options[:config]} not found"
+  exit 1
+end
 
 # setup logging
 class MultiIO
