@@ -1,0 +1,18 @@
+---
+global:
+  log_dir: '/var/log/bupper'
+  log_level: 'debug'
+profiles:
+  root_home:
+    source:
+      - '/root'
+    remote: true
+    destination: 'server:/var/lib/backup'
+    backup_exclude:
+      - 'src1'
+  temp:
+    source:
+      - '/tmp'
+      - '/var/tmp'
+    pre_backup_commands:
+      - '/usr/local/bin/pre_backup.sh'

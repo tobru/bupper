@@ -1,0 +1,156 @@
+#!/usr/bin/env ruby
+
+require 'yaml'
+require 'net/smtp'
+require 'optparse'
+require 'open3'
+require 'logger'
+
+options = {}
+
+opt_parser = OptionParser.new do |opt|
+  opt.banner = 'Usage: bupper COMMAND [OPTIONS]'
+  opt.separator  ''
+  opt.separator  'Commands'
+  opt.separator  '     backup: run backup for the specified profile, or all'
+  opt.separator  '     restore: initialize all the things to restore a backup (mainly: mount sshfs)'
+  opt.separator  ''
+  opt.separator  'Options'
+
+  options[:profile] = 'all'
+  opt.on('-p','--profile PROFILE','name of the profile as specified in the configuration file, defaults to all') do |profile|
+    options[:profile] = profile
+  end
+
+  options[:config] = '/etc/bupper.yml'
+  opt.on('-c','--config FILENAME','filename of the config file, including the path') do |config|
+    options[:config] = config
+  end
+
+  opt.on('-h','--help','help') do
+    puts opt_parser
+  end
+end
+
+opt_parser.parse!
+action = ARGV[0]
+
+# load and parse configuration
+configuration = YAML.load_file(options[:config])
+
+# setup logging
+class MultiIO
+  def initialize(*targets)
+     @targets = targets
+  end
+
+  def write(*args)
+    @targets.each {|t| t.write(*args)}
+  end
+
+  def close
+    @targets.each(&:close)
+  end
+end
+log_file = File.open(configuration['global']['log_dir'] + '/bupper.log', 'a')
+@log = Logger.new MultiIO.new(STDOUT, log_file)
+case configuration['global']['log_level']
+  when 'debug' then @log.level = Logger::DEBUG
+  when 'info' then @log.level = Logger::INFO
+  when 'warn' then @log.level = Logger::WARN
+  when 'error' then @log.level = Logger::ERROR
+  when 'fatal' then @log.level = Logger::FATAL
+  when 'unknown' then @log.level = Logger::UNKNOWN
+end
+
+def run_command(command)
+  @log.info('running command: ' + command)
+  o, e, s = Open3.capture3(command)
+  if s.success?
+    @log.info('command successful')
+    return true
+  else
+    @log.error('command failed')
+    return false
+  end
+  #system(command)
+end
+
+def backup(name, profile)
+  @log.info('action: backup. profile: ' + name)
+
+  # run pre_backup_commands if configured
+  profile['pre_backup_commands'].each do |command| run_command(command)
+    end if profile.has_key?('pre_backup_commands')
+
+  # run bup index
+  index_status = bup_index(name, profile)
+
+  # run bup save if indexing was successfull
+  bup_save(name, profile) if index_status
+
+  # run post_backup_commands if configured
+  profile['post_backup_commands'].each do |command| run_command(command)
+    end if profile.has_key?('post_backup_commands')
+end
+
+def bup_index(name, profile)
+  @log.info('running bup index for profile ' + name)
+  if profile.has_key?('backup_exclude')
+    excludes = ''
+    profile['backup_exclude'].each do |exclude| excludes << '--exclude=' + exclude + ' ' end
+    command = 'bup index -x -f /root/.bup/index_' + name + ' ' + excludes + profile['source'].join(' ')
+  else
+    command = 'bup index -x -f /root/.bup/index_' + name + ' ' + profile['source'].join(' ')
+  end
+  @log.debug(command)
+  o, e, s = Open3.capture3(command)
+  if s.success?
+    @log.info('indexing successful for profile ' + name)
+    return true
+  else
+    @log.error('indexing failed for profile ' + name)
+    return false
+  end
+end
+
+def bup_save(name, profile)
+  if profile.has_key?('remote') then remote = profile['remote'] else remote = false end
+  if remote
+    command = "bup save -r #{profile['destination']} -n #{name} -f /root/.bup/index_#{name} " + profile['source'].join(' ')
+  else
+    command = "bup save -n #{name} -f /root/.bup/index_#{name} " + profile['source'].join(' ')
+  end
+  @log.debug(command)
+  o, e, s = Open3.capture3(command)
+  if s.success?
+    @log.info('saving successful for profile ' + name)
+    return true
+  else
+    @log.error('saving failed for profile ' + name)
+    return false
+  end
+end
+
+# do the action
+case action
+  when 'backup'
+    if options[:profile].match('all')
+      configuration['profiles'].each do |name, profile|
+        backup(name, profile)
+      end
+    elsif configuration['profiles'].has_key?(options[:profile])
+      backup(options[:profile], configuration['profiles'][options[:profile]])
+    else
+      @log.fatal('profile ' + options[:profile] + ' not found in configuration')
+      exit 1
+    end
+  when 'restore'
+    puts 'restore (mounting sshfs) not implemented yet'
+    exit 1
+  else
+    puts opt_parser
+end
+
+# cleanup
+@log.close
