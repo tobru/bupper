@@ -36,7 +36,7 @@ opt_parser.parse!
 action = ARGV[0]
 
 # load and parse configuration
-if File.exist?(options[:config])
+if File.exists?(options[:config])
   configuration = YAML.load_file(options[:config])
 else
   puts "Configuration file #{options[:config]} not found"
@@ -44,6 +44,10 @@ else
 end
 
 # setup logging
+if not File.exist?(configuration['global']['log_dir'])
+  puts "Log directory #{configuration['global']['log_dir']} does not exist"
+  exit 1
+end
 class MultiIO
   def initialize(*targets)
      @targets = targets
