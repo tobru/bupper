@@ -9,7 +9,7 @@ bupper is a profile manager for [bup](https://github.com/bup/bup), the backup ut
 * Install [bup](https://github.com/bup/bup) > 0.25
   Ubuntu 14.04 has already this version shipped: `apt-get install bup`
 * Optional: Install `sshfs`, needed for restoring from remote server
-* `gem install bupper`
+* `git clone https://github.com/tobru/bupper.git && cd bupper && ln -s $(pwd)/bin/bupper /usr/local/bin/bupper`
 
 ## Configuration
 
@@ -38,6 +38,25 @@ profiles:
     destination: 'server:/var/lib/backup'
 ```
 
+### Detailed configuration parameter description
+
+**global**
+
+* *log_dir* (string): path where the log will be saved
+* *log_level* (string): choose one of: debug, info, warn, error, fatal, unknown
+
+**profiles**
+
+The profile name should only contain letters and underscores.
+
+* *source* (array): source directories for the backup
+* *bup_dir* (string): bup working directory, defaults to /root/.bup
+* *remote* (boolean): is the destination local or remote
+* *destination* (string): destination for remote backups
+* *backup_exclude* (array): exclude directories or files
+* *pre_backup_commands* (array): commands to execute before the backup
+* *post_backup_commands* (array): commands to execute after the backup
+
 ## Usage
 
 To use bup, you need to initialize a local repository: `bup init`.
@@ -46,15 +65,17 @@ The default for `bup_dir` is `/root/.bup`
 
 ### Backup
 
+This runs `bup index` and `bup save` and the specified pre- and post-backup scripts (if there are any)
+
 * `bupper backup -p <profilename>`
 * `bupper backup -p all`
 
 ### Restore
 
-* `bupper restore -a init -p <name>`
-* `bupper restore -a init -p all`
-* `bupper restore -a finish -p <name>`
-* `bupper restore -a finish -p all`
+It just outputs some help text, but does nothing by itself.
+
+* `bupper restore -p <profilename>`
+* `bupper restore -p all`
 
 ### Other
 
@@ -64,17 +85,6 @@ The default for `bup_dir` is `/root/.bup`
 
 * `-c | --config`: Path to the config file (Default: `/etc/bupper.yml`
 * `-p | --profile`: Name of the profile or `all` (Default: all)
-
-### Notes
-
-* Restore is not yet implemented, you have to mount sshfs by yourself
-* The GEM is not available yet as it's just not done
-
-### TODO
-
-* Make a GEM
-* Cleanup all ugly Ruby things which I did wrong
-* Move functions into lib
 
 ## The MIT License (MIT)
 
