@@ -165,6 +165,50 @@ def bup_save(name, profile)
   end
 end
 
+def restore_help(name, profile)
+
+  # define bup_dir
+  if profile.has_key?('bup_dir')
+    bup_dir = profile['bup_dir']
+  else
+    bup_dir = '/root/.bup'
+  end
+
+  puts ""
+  puts "Restore help (profile #{name})"
+  puts "------------"
+
+  if profile.has_key?('remote') then remote = profile['remote'] else remote = false end
+  if remote
+    puts "This profile has it's data saved on a remote server: #{profile['destination']}"
+    puts ""
+    puts "You need to mount the remote directory with sshfs:"
+    puts ""
+    puts "  sshfs is not installed!" if not File.exists?('/usr/bin/sshfs')
+    puts "  apt-get install sshfs" if not File.exists?('/usr/bin/sshfs')
+    puts "  mkdir /mnt/#{name}" if not File.exist?("/mnt/#{name}")
+    puts "  sshfs #{profile['destination']} /mnt/#{name}" if File.exists?('/usr/bin/sshfs')
+    puts ""
+    puts "Now use the bup commands to restore files:"
+    puts ""
+    puts "  BUP_DIR=/mnt/#{name} bup ls"
+    puts "  BUP_DIR=/mnt/#{name} bup restore"
+    puts ""
+    puts "When finished:"
+    puts "  umount /mnt/#{name}"
+    puts ""
+  else
+    puts "This profile has it's data saved local on this server"
+    puts ""
+    puts "Use the bup commands to restore files:"
+    puts ""
+    puts "  BUP_DIR=#{bup_dir} bup ls"
+    puts "  BUP_DIR=#{bup_dir} bup restore"
+    puts ""
+  end
+
+end
+
 # do the action
 case action
   when 'backup'
@@ -179,8 +223,16 @@ case action
       exit 1
     end
   when 'restore'
-    puts 'restore (mounting sshfs) not implemented yet'
-    exit 1
+    if options[:profile].match('all')
+      configuration['profiles'].each do |name, profile|
+        restore_help(name, profile)
+      end
+    elsif configuration['profiles'].has_key?(options[:profile])
+      restore_help(options[:profile], configuration['profiles'][options[:profile]])
+    else
+      @log.fatal('profile ' + options[:profile] + ' not found in configuration')
+      exit 1
+    end
   else
     puts opt_parser
 end
