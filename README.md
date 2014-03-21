@@ -24,6 +24,7 @@ profiles:
   profile_local:
     source:
       - '/etc'
+    bup_dir: '/var/lib/backup/bup'
     pre_backup_commands:
       - '/usr/local/bin/pre_backup.sh'
     post_backup_commands:
@@ -40,6 +41,8 @@ profiles:
 ## Usage
 
 To use bup, you need to initialize a local repository: `bup init`.
+If you're using `bup_dir` in the configuration file to specify the working directory, use `BUP_DIR=<dir> bup init`
+The default for `bup_dir` is `/root/.bup`
 
 ### Backup
 

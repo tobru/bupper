@@ -105,15 +105,26 @@ end
 
 def bup_index(name, profile)
   @log.info('running bup index for profile ' + name)
+
+  # define bup_dir
+  if profile.has_key?('bup_dir')
+    bup_dir = profile['bup_dir']
+  else
+    bup_dir = '/root/.bup'
+  end
+
+  # define command to run
   if profile.has_key?('backup_exclude')
     excludes = ''
     profile['backup_exclude'].each do |exclude| excludes << '--exclude=' + exclude + ' ' end
-    command = 'bup index -x -f /root/.bup/index_' + name + ' ' + excludes + profile['source'].join(' ')
+    command = "bup index -x -f /root/.bup/index_#{name} #{excludes} #{profile['source'].join(' ')}"
   else
-    command = 'bup index -x -f /root/.bup/index_' + name + ' ' + profile['source'].join(' ')
+    command = "bup index -x -f /root/.bup/index_#{name} #{profile['source'].join(' ')}"
   end
+
+  @log.debug("BUP_DIR=#{bup_dir}")
   @log.debug(command)
-  o, e, s = Open3.capture3(command)
+  o, e, s = Open3.capture3({'BUP_DIR' => bup_dir}, command)
   if s.success?
     @log.info('indexing successful for profile ' + name)
     return true
@@ -125,14 +136,25 @@ end
 
 def bup_save(name, profile)
   @log.info('running bup save for profile ' + name)
+
+  # define bup_dir
+  if profile.has_key?('bup_dir')
+    bup_dir = profile['bup_dir']
+  else
+    bup_dir = '/root/.bup'
+  end
+
+  # decide if the destination is remote or not
   if profile.has_key?('remote') then remote = profile['remote'] else remote = false end
   if remote
     command = "bup save -r #{profile['destination']} -n #{name} -f /root/.bup/index_#{name} " + profile['source'].join(' ')
   else
     command = "bup save -n #{name} -f /root/.bup/index_#{name} " + profile['source'].join(' ')
   end
+ 
+  @log.debug("BUP_DIR=#{bup_dir}")
   @log.debug(command)
-  o, e, s = Open3.capture3(command)
+  o, e, s = Open3.capture3({'BUP_DIR' => bup_dir}, command)
   if s.success?
     @log.info('saving successful for profile ' + name)
     return true
