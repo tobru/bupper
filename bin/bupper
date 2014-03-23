@@ -74,15 +74,13 @@ end
 
 def run_command(command)
   @log.info('running command: ' + command)
-  o, e, s = Open3.capture3(command)
-  if s.success?
+  if system(command)
     @log.info('command successful')
     return true
   else
     @log.error('command failed')
     return false
   end
-  #system(command)
 end
 
 def backup(name, profile)
@@ -124,8 +122,7 @@ def bup_index(name, profile)
 
   @log.debug("BUP_DIR=#{bup_dir}")
   @log.debug(command)
-  o, e, s = Open3.capture3({'BUP_DIR' => bup_dir}, command)
-  if s.success?
+  if system({'BUP_DIR' => bup_dir}, command)
     @log.info('indexing successful for profile ' + name)
     return true
   else
@@ -154,13 +151,11 @@ def bup_save(name, profile)
  
   @log.debug("BUP_DIR=#{bup_dir}")
   @log.debug(command)
-  o, e, s = Open3.capture3({'BUP_DIR' => bup_dir}, command)
-  if s.success?
+  if system({'BUP_DIR' => bup_dir}, command)
     @log.info('saving successful for profile ' + name)
     return true
   else
     @log.error('saving failed for profile ' + name)
-    @log.debug('return code of bup save: ' + s.exitstatus.to_s)
     return false
   end
 end
