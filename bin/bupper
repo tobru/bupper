@@ -209,7 +209,9 @@ case action
   when 'backup'
     if options[:profile].match('all')
       configuration['profiles'].each do |name, profile|
-        backup(name, profile)
+        if profile.has_key?('enabled') then enabled = profile['enabled'] else enabled = true end
+        backup(name, profile) if enabled
+        @log.info("profile #{name} is disabled for 'all' backup. skipping.") if not enabled
       end
     elsif configuration['profiles'].has_key?(options[:profile])
       backup(options[:profile], configuration['profiles'][options[:profile]])
