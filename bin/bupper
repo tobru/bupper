@@ -112,13 +112,11 @@ def bup_index(name, profile)
   end
 
   # define command to run
-  if profile.has_key?('backup_exclude')
-    excludes = ''
-    profile['backup_exclude'].each do |exclude| excludes << '--exclude=' + exclude + ' ' end
-    command = "bup index -x -f #{bup_dir}/index_#{name} #{excludes} #{profile['source'].join(' ')}"
-  else
-    command = "bup index -x -f #{bup_dir}/index_#{name} #{profile['source'].join(' ')}"
-  end
+  excludes = ''
+  profile['backup_exclude'].each do |exclude| excludes << '--exclude=' + exclude + ' ' end if profile.has_key?('backup_exclude')
+  profile['backup_exclude_rx'].each do |exclude| excludes << '--exclude-rx=' + exclude + ' ' end if profile.has_key?('backup_exclude_rx')
+
+  command = "bup index -x -f #{bup_dir}/index_#{name} #{excludes} #{profile['source'].join(' ')}"
 
   @log.debug("BUP_DIR=#{bup_dir}")
   @log.debug(command)
