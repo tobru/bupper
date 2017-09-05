@@ -5,6 +5,8 @@ require 'net/smtp'
 require 'optparse'
 require 'open3'
 require 'logger'
+require 'os'
+require 'ptools'
 
 options = {}
 
@@ -177,10 +179,16 @@ def restore_help(name, profile)
     puts ""
     puts "You need to mount the remote directory with sshfs:"
     puts ""
-    puts "  sshfs is not installed!" if not File.exists?('/usr/bin/sshfs')
-    puts "  apt-get install sshfs" if not File.exists?('/usr/bin/sshfs')
-    puts "  mkdir /mnt/#{name}" if not File.exist?("/mnt/#{name}")
-    puts "  sshfs #{profile['destination']} /mnt/#{name}" if File.exists?('/usr/bin/sshfs')
+
+    unless File.which 'sshfs'
+      puts "  sshfs is not installed!"
+      puts "  apt-get install sshfs" if OS.linux?
+      puts "  Download pkg from https://github.com/osxfuse/sshfs/releases/latest" if OS.mac?
+      puts ""
+    end
+
+    puts "  mkdir /mnt/#{name}" unless File.exist?("/mnt/#{name}")
+    puts "  sshfs #{profile['destination']} /mnt/#{name}"
     puts ""
     puts "Now use the bup commands to restore files:"
     puts ""
