@@ -190,7 +190,7 @@ def restore_help(name, profile)
     puts "You need to mount the remote directory with sshfs:"
     puts ""
 
-    unless which'sshfs'
+    unless which 'sshfs'
       puts "  sshfs is not installed!"
       puts "  apt-get install sshfs" if OS.linux?
       puts "  https://github.com/osxfuse/sshfs/releases/latest" if OS.mac?
