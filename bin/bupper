@@ -5,8 +5,20 @@ require 'net/smtp'
 require 'optparse'
 require 'open3'
 require 'logger'
+require 'os'
 
 options = {}
+
+def which(cmd)
+  exts = ENV['PATHEXT'] ? ENV['PATHEXT'].split(';') : ['']
+  ENV['PATH'].split(File::PATH_SEPARATOR).each do |path|
+    exts.each { |ext|
+      exe = File.join(path, "#{cmd}#{ext}")
+      return exe if File.executable?(exe) && !File.directory?(exe)
+    }
+  end
+  return nil
+end
 
 opt_parser = OptionParser.new do |opt|
   opt.banner = 'Usage: bupper COMMAND [OPTIONS]'
@@ -177,10 +189,16 @@ def restore_help(name, profile)
     puts ""
     puts "You need to mount the remote directory with sshfs:"
     puts ""
-    puts "  sshfs is not installed!" if not File.exists?('/usr/bin/sshfs')
-    puts "  apt-get install sshfs" if not File.exists?('/usr/bin/sshfs')
-    puts "  mkdir /mnt/#{name}" if not File.exist?("/mnt/#{name}")
-    puts "  sshfs #{profile['destination']} /mnt/#{name}" if File.exists?('/usr/bin/sshfs')
+
+    unless which'sshfs'
+      puts "  sshfs is not installed!"
+      puts "  apt-get install sshfs" if OS.linux?
+      puts "  https://github.com/osxfuse/sshfs/releases/latest" if OS.mac?
+      puts ""
+    end
+
+    puts "  mkdir /mnt/#{name}" unless File.exist?("/mnt/#{name}")
+    puts "  sshfs #{profile['destination']} /mnt/#{name}"
     puts ""
     puts "Now use the bup commands to restore files:"
     puts ""
